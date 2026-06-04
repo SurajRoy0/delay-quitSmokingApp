@@ -1,0 +1,56 @@
+[
+  {
+    "id": 1,
+    "timeLabel": "20 Minutes",
+    "description": "Heart rate and blood pressure drop back to normal levels.",
+    "minutesRequired": 20
+  },
+  {
+    "id": 2,
+    "timeLabel": "8 Hours",
+    "description": "Carbon monoxide levels in your blood drop by half.",
+    "minutesRequired": 480
+  },
+  {
+    "id": 3,
+    "timeLabel": "24 Hours",
+    "description": "Carbon monoxide is eliminated. Lungs begin to clear out mucus.",
+    "minutesRequired": 1440
+  },
+  {
+    "id": 4,
+    "timeLabel": "48 Hours",
+    "description": "Nicotine is out of the body. Sense of taste and smell improve.",
+    "minutesRequired": 2880
+  },
+  {
+    "id": 5,
+    "timeLabel": "72 Hours",
+    "description": "Breathing becomes easier as bronchial tubes relax.",
+    "minutesRequired": 4320
+  },
+  {
+    "id": 6,
+    "timeLabel": "1 Week",
+    "description": "Circulation improves. Walking and exercising become easier.",
+    "minutesRequired": 10080
+  },
+  {
+    "id": 7,
+    "timeLabel": "1 Month",
+    "description": "Lung function increases by up to 30%.",
+    "minutesRequired": 43200
+  },
+  {
+    "id": 8,
+    "timeLabel": "3 Months",
+    "description": "Coughing and shortness of breath decrease significantly.",
+    "minutesRequired": 129600
+  },
+  {
+    "id": 9,
+    "timeLabel": "1 Year",
+    "description": "Risk of heart disease is half that of a smoker.",
+    "minutesRequired": 525600
+  }
+]

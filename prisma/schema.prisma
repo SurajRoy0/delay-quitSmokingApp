@@ -1,0 +1,322 @@
+// ============================================================
+// Delay — Quit Smoking Through Progressive Delay
+// Prisma Schema (PostgreSQL)
+// ============================================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum SmokingReason {
+  STRESS
+  WORK
+  THINKING
+  BOREDOM
+  SOCIAL
+  HABIT
+  OTHER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+}
+
+enum GapStatus {
+  ACTIVE      // gap is currently running
+  COMPLETED   // user beat the target gap
+  BROKEN      // user smoked before reaching target
+}
+
+enum Currency {
+  INR
+  USD
+  EUR
+  GBP
+}
+
+// ============================================================
+// AUTH MODELS (Better Auth compatible)
+// ============================================================
+
+model Account {
+  id String @id @default(cuid())
+
+  accountId  String
+  providerId String
+
+  userId String
+
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================
+// USER
+// ============================================================
+
+model User {
+  id            String  @id @default(cuid())
+  name          String?
+  email         String  @unique
+  emailVerified Boolean @default(false)
+  image         String?
+
+  // Onboarding
+  onboardingCompleted Boolean @default(false)
+
+  // Smoking profile — set during onboarding, used for money calculations
+  dailyCigarettes Int?   // baseline cigarettes/day before using app
+  cigarettePrice  Float? @default(20) // price per single cigarette
+  currency        Currency @default(INR)
+
+  // Gap preference — desired target gap in minutes
+  // Stored here as user's current preference/default.
+  // The active GapSession.targetMinutes is the source of truth
+  // for any running session. This is only a default for new sessions.
+  defaultGapTargetMinutes Int @default(240) // 4 hours default
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  smokeLogs     SmokeLog[]
+  gapSessions   GapSession[]
+  cravingEvents CravingEvent[]
+  subscription  Subscription?
+  userStats     UserStats?
+}
+
+// ============================================================
+// USER STATS
+// Denormalized aggregate table — updated on every SmokeLog write.
+// Avoids full table scans for dashboard metrics.
+// ============================================================
+
+model UserStats {
+  userId String @id
+
+  // Personal best — never reset, even on relapse
+  longestGapMinutes Int @default(0)
+
+  // Running total of cigarettes actually smoked (via SmokeLog)
+  totalCigarettesLogged Int @default(0)
+
+  // Running total of cravings resisted (CravingEvent.resisted = true)
+  totalCravingsResisted Int @default(0)
+
+  // NOTE: Money saved is NOT stored here.
+  // Calculate dynamically:
+  //   cigarettesAvoided = (dailyCigarettes × daysSinceJoin) - totalCigarettesLogged
+  //   moneySaved = cigarettesAvoided × cigarettePrice
+  // This stays accurate even if user updates cigarettePrice later.
+
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================
+// SMOKE LOG
+// The single core event in the entire system.
+// Everything is derived from this table.
+// ============================================================
+
+model SmokeLog {
+  id     String @id @default(cuid())
+  userId String
+
+  smokedAt DateTime @default(now())
+
+  // Why the user smoked — captured at log time
+  reason SmokingReason?
+
+  // Free text note (optional)
+  notes String?
+
+  // Gap since the previous cigarette in minutes.
+  // Stored at write time for fast reads and reporting.
+  // Derived from: smokedAt - previousLog.smokedAt
+  gapMinutes Int?
+
+  // Self-referential chain: each log points to the one before it.
+  // Enables historical recalculation and gap analytics without
+  // expensive timestamp-based joins.
+  previousLogId String?   @unique // one-to-one chain (each log has one previous)
+  previousLog   SmokeLog? @relation("SmokeChain", fields: [previousLogId], references: [id])
+  nextLog       SmokeLog? @relation("SmokeChain") // the log that came after this one
+
+  // Which gap session did this log end (break or complete)?
+  // Null if no active gap session existed when this log was created.
+  endedGapSessionId String?     @unique // one smoke ends at most one session
+  endedGapSession   GapSession? @relation("SessionEndedBy", fields: [endedGapSessionId], references: [id])
+
+  // The gap session that was STARTED by this smoke log
+  // (each smoke starts a new gap session)
+  startedGapSession GapSession? @relation("SessionStartedBy")
+
+  // The craving event linked to this smoke (if user logged craving before smoking)
+  cravingEvent CravingEvent?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, smokedAt(sort: Desc)])
+}
+
+// ============================================================
+// GAP SESSION
+// Tracks each interval between cigarettes.
+// Started when user smokes. Ends when they smoke again.
+// ============================================================
+
+model GapSession {
+  id     String @id @default(cuid())
+  userId String
+
+  // The target the user was aiming for during this session
+  targetMinutes Int
+
+  // When this gap session started (= when user smoked the triggering cigarette)
+  startedAt DateTime
+
+  // Which SmokeLog started this session
+  startedBySmokeLogId String?   @unique
+  startedBySmokeLog   SmokeLog? @relation("SessionStartedBy", fields: [startedBySmokeLogId], references: [id])
+
+  // When this session ended (null = still active)
+  endedAt DateTime?
+
+  // Actual gap achieved in minutes (null if still active)
+  actualMinutes Int?
+
+  // ACTIVE → session is running
+  // COMPLETED → user reached or exceeded target before smoking
+  // BROKEN → user smoked before reaching target
+  status GapStatus @default(ACTIVE)
+
+  // Which SmokeLog ended (broke or completed) this session
+  // Inverse of SmokeLog.endedGapSessionId
+  endedBySmokeLog SmokeLog? @relation("SessionEndedBy")
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startedAt(sort: Desc)])
+  @@index([userId, status])
+}
+
+// ============================================================
+// CRAVING EVENT
+// Tracks both resisted cravings AND smoked cravings.
+// Replaces the old CravingLog model.
+//
+// resisted = true  → user felt a craving but did NOT smoke
+// resisted = false → user felt a craving and DID smoke
+//                    (linked to the resulting SmokeLog)
+// ============================================================
+
+model CravingEvent {
+  id     String @id @default(cuid())
+  userId String
+
+  reason SmokingReason?
+
+  // Core distinction: did the user resist or give in?
+  resisted Boolean @default(false)
+
+  // If resisted = false, this links to the SmokeLog created when they smoked.
+  // If resisted = true, this is null.
+  smokeLogId String?   @unique
+  smokeLog   SmokeLog? @relation(fields: [smokeLogId], references: [id])
+
+  // Optional note
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, resisted])
+}
+
+// ============================================================
+// SUBSCRIPTION
+// ============================================================
+
+model Subscription {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  // "razorpay" or "stripe"
+  provider String
+
+  providerCustomerId String?
+  planId             String? // internal plan identifier (e.g. "premium_monthly")
+  providerPlanId     String? // provider's own plan/price ID
+
+  status SubscriptionStatus
+
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+
+  canceledAt DateTime? // when user canceled (for grace period logic)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
