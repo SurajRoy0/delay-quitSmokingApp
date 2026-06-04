@@ -3,6 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUserId } from "@/lib/server-utils";
 import { formatDurationMinutes } from "@/lib/format";
+import { revalidatePath } from "next/cache";
+import { format, differenceInDays, differenceInMinutes } from "date-fns";
+import { rawMinuteOptions } from "@/components/duration-picker";
 
 
 export async function getUserProfile() {
@@ -15,10 +18,7 @@ export async function getUserProfile() {
 
   if (!user) throw new Error("User not found");
 
-  const joinDate = new Date(user.createdAt).toLocaleDateString("en-US", {
-    month: "short",
-    year: "numeric",
-  });
+  const joinDate = format(user.createdAt, "MMM yyyy");
   const currencySymbols: Record<string, string> = {
     INR: "₹",
     USD: "$",
@@ -37,6 +37,8 @@ export async function getUserProfile() {
       pricePerCigarette: user.cigarettePrice || 20,
       currencySymbol,
       gapTarget: formatDurationMinutes(user.defaultGapTargetMinutes),
+      currency: user.currency,
+      defaultGapTargetMinutes: user.defaultGapTargetMinutes,
     },
   };
 }
@@ -71,12 +73,13 @@ export async function getUserStats() {
       currencySymbol,
       oxygenLevel: 95,
       totalCigarettesLogged: 0,
+      defaultGapTargetMinutes: user.defaultGapTargetMinutes,
     };
   }
 
   const daysSinceJoin = Math.max(
     1,
-    (Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+    differenceInDays(new Date(), user.createdAt)
   );
   const dailyCigs = user.dailyCigarettes || 10;
   const expectedSmoked = dailyCigs * daysSinceJoin;
@@ -85,8 +88,7 @@ export async function getUserStats() {
 
   let oxygen = 95;
   if (activeSession) {
-    const elapsedMinutes =
-      (Date.now() - activeSession.startedAt.getTime()) / (1000 * 60);
+    const elapsedMinutes = differenceInMinutes(new Date(), activeSession.startedAt);
     if (elapsedMinutes > 480) oxygen = 100;
     else if (elapsedMinutes > 20) oxygen = 98;
   }
@@ -97,5 +99,57 @@ export async function getUserStats() {
     currencySymbol,
     oxygenLevel: oxygen,
     totalCigarettesLogged: stats.totalCigarettesLogged,
+    defaultGapTargetMinutes: user.defaultGapTargetMinutes,
   };
+}
+
+export async function updateUserProfile(data: {
+  dailyCigarettes: number;
+  cigarettePrice: number;
+  currency: "INR" | "USD" | "EUR" | "GBP";
+  defaultGapTargetMinutes: number;
+}) {
+  const userId = await getAuthenticatedUserId();
+
+  const { dailyCigarettes, cigarettePrice, currency, defaultGapTargetMinutes } =
+    data;
+
+  const minGap = rawMinuteOptions[0];
+
+  if (
+    dailyCigarettes < 1 ||
+    dailyCigarettes > 200 ||
+    cigarettePrice <= 0 ||
+    defaultGapTargetMinutes < minGap
+  ) {
+    return { error: "Invalid data. Please check your inputs." };
+  }
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      dailyCigarettes,
+      cigarettePrice,
+      currency,
+      defaultGapTargetMinutes,
+    },
+  });
+
+  // Also update active session's target minutes to align with the new default
+  const activeSession = await prisma.gapSession.findFirst({
+    where: { userId, status: "ACTIVE" },
+    orderBy: { startedAt: "desc" },
+  });
+
+  if (activeSession) {
+    await prisma.gapSession.update({
+      where: { id: activeSession.id },
+      data: { targetMinutes: defaultGapTargetMinutes },
+    });
+  }
+
+  revalidatePath("/home");
+  revalidatePath("/profile");
+
+  return { success: true };
 }

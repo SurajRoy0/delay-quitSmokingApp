@@ -15,15 +15,16 @@ export function proxy(request: NextRequest) {
 
   const sessionCookie = getSessionCookie(request);
 
-  // Redirect logged-in users away from auth pages
-  if (sessionCookie && pathname.startsWith("/login")) {
+  // Redirect logged-in users away from landing page and auth pages
+  if (sessionCookie && (pathname === "/" || pathname.startsWith("/login"))) {
     return NextResponse.redirect(new URL("/home", request.url));
   }
 
   // Protect all app routes (anything not in PUBLIC_ROUTES)
-  const isPublic = PUBLIC_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith("/api/auth")
-  );
+  const isPublic =
+    PUBLIC_ROUTES.some((route) => pathname === route) ||
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/dev/");
 
   if (!sessionCookie && !isPublic) {
     return NextResponse.redirect(new URL("/login", request.url));

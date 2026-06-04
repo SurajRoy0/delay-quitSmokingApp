@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Cigarette } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import {
   Dialog,
@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { completeOnboarding } from "@/actions/onboarding";
+import { updateUserProfile } from "@/actions/user";
 import { DurationPicker, rawMinuteOptions } from "@/components/duration-picker";
 
 const minGap = rawMinuteOptions[0];
@@ -66,72 +66,71 @@ const CURRENCY_OPTIONS: { label: string; value: "INR" | "USD" | "EUR" | "GBP" }[
   { label: "£ GBP", value: "GBP" },
 ];
 
-interface OnboardingDialogProps {
+interface EditProfileModalProps {
   open: boolean;
-  onComplete: () => void;
+  onOpenChange: (open: boolean) => void;
+  initialValues: {
+    dailyCigarettes: number;
+    pricePerCigarette: number;
+    currency: "INR" | "USD" | "EUR" | "GBP";
+    defaultGapTargetMinutes: number;
+  };
 }
 
-export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
+export function EditProfileModal({
+  open,
+  onOpenChange,
+  initialValues,
+}: EditProfileModalProps) {
   const router = useRouter();
-  const [isCustom, setIsCustom] = useState(false);
+  
+  // Detect if initial value is custom or preset
+  const isPresetInitial = [60, 120, 240, 360, 480].includes(
+    initialValues.defaultGapTargetMinutes
+  );
+  const [isCustom, setIsCustom] = useState(!isPresetInitial);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema) as Resolver<FormValues>,
     defaultValues: {
-      dailyCigarettes: 10,
-      cigarettePrice: 20,
-      currency: "INR",
-      defaultGapTargetMinutes: 240,
+      dailyCigarettes: initialValues.dailyCigarettes,
+      cigarettePrice: initialValues.pricePerCigarette,
+      currency: initialValues.currency,
+      defaultGapTargetMinutes: initialValues.defaultGapTargetMinutes,
     },
   });
 
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: FormValues) {
-    const result = await completeOnboarding(values);
+    const result = await updateUserProfile(values);
 
-    if ("error" in result) {
+    if (result && "error" in result) {
       toast.error(result.error);
       return;
     }
 
-    toast.success("All set! Let's begin your journey.");
-    onComplete();
+    toast.success("Profile settings updated successfully!");
+    onOpenChange(false);
     router.refresh();
   }
 
   return (
-    <Dialog
-      open={open}
-      // Prevent closing by clicking outside — must complete onboarding
-      onOpenChange={() => {}}
-    >
-      <DialogContent
-        className="sm:max-w-md rounded-[2rem] bg-card border border-border shadow-lg p-6 overflow-hidden"
-        hideCloseButton={true}
-        // Remove the default close button
-        onInteractOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-      >
-        <DialogHeader className="text-left space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-ember-1 to-ember-2 flex items-center justify-center shrink-0 shadow-sm">
-              <Cigarette className="w-5 h-5 text-white" />
-            </div>
-            <DialogTitle className="text-2xl font-bold tracking-tight text-foreground">
-              Tell us about yourself
-            </DialogTitle>
-          </div>
-          <DialogDescription className="text-sm font-medium text-muted-foreground leading-relaxed pt-2">
-            This helps us calculate how much you&apos;re saving and set a
-            realistic first goal. You can update these anytime.
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md rounded-[2rem] bg-card border border-border shadow-lg p-6 max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="text-left space-y-2">
+          <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
+            Edit Smoking Profile
+          </DialogTitle>
+          <DialogDescription className="text-xs text-muted-foreground">
+            Update your baseline cigarettes, price per single cigarette, currency, or preferred gap goal.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col gap-5 mt-4"
+            className="flex flex-col gap-4 mt-2"
           >
             {/* Daily cigarettes */}
             <FormField
@@ -139,13 +138,12 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
               name="dailyCigarettes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-semibold">How many cigarettes do you smoke per day?</FormLabel>
+                  <FormLabel className="text-xs font-semibold">Daily Cigarettes</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
                       min={1}
                       max={200}
-                      placeholder="e.g. 10"
                       className="bg-background border-border rounded-xl"
                       {...field}
                     />
@@ -162,13 +160,12 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
                 name="cigarettePrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-semibold">Price per cigarette</FormLabel>
+                    <FormLabel className="text-xs font-semibold">Price per single</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         min={0.01}
                         step={0.01}
-                        placeholder="e.g. 20"
                         className="bg-background border-border rounded-xl"
                         {...field}
                       />
@@ -183,10 +180,10 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
                 name="currency"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-semibold">Currency</FormLabel>
+                    <FormLabel className="text-xs font-semibold">Currency</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger className="bg-white/50 dark:bg-black/50 border-white/20 dark:border-white/10 rounded-xl">
@@ -216,15 +213,15 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
                 const selectValue = isCustom || !isPreset ? "-1" : String(field.value);
 
                 return (
-                  <FormItem>
-                    <FormLabel className="text-sm font-semibold">What&apos;s your first gap target?</FormLabel>
+                  <FormItem className="flex flex-col">
+                    <FormLabel className="text-xs font-semibold">Default Gap Target</FormLabel>
                     <Select
                       onValueChange={(v) => {
                         const val = parseInt(v, 10);
                         if (val === -1) {
                           setIsCustom(true);
                           if (isPreset) {
-                            field.onChange(240); // default custom value
+                            field.onChange(240); // default custom
                           }
                         } else {
                           setIsCustom(false);
@@ -238,7 +235,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="rounded-xl bg-white/90 dark:bg-black/90 backdrop-blur-xl border-border/50">
+                      <SelectContent className="rounded-xl bg-popover border-border">
                         {GAP_OPTIONS.map((opt) => (
                           <SelectItem key={opt.value} value={String(opt.value)} className="rounded-lg">
                             {opt.label}
@@ -249,7 +246,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
                     <FormMessage />
 
                     {(isCustom || !isPreset) && (
-                      <div className="mt-3 p-4 rounded-2xl bg-muted/20 border border-border/30 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <div className="mt-2 p-3 rounded-2xl bg-muted/20 border border-border/30 animate-in fade-in slide-in-from-top-1 duration-200">
                         <DurationPicker
                           value={field.value}
                           onChange={(mins) => field.onChange(mins)}
@@ -261,20 +258,30 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
               }}
             />
 
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full mt-4 h-12 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md transition-all active:scale-95"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Saving…
-                </>
-              ) : (
-                "Start my journey"
-              )}
-            </Button>
+            <div className="flex gap-3 mt-4">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+                className="flex-1 rounded-full h-11 border border-border/40 font-medium"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="flex-1 rounded-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md transition-all active:scale-95"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
+            </div>
           </form>
         </Form>
       </DialogContent>

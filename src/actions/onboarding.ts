@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Currency } from "@/generated/prisma/client";
+import { rawMinuteOptions } from "@/components/duration-picker";
 
 export type OnboardingData = {
   dailyCigarettes: number;
@@ -31,11 +32,13 @@ export async function completeOnboarding(
   const { dailyCigarettes, cigarettePrice, currency, defaultGapTargetMinutes } =
     data;
 
+  const minGap = rawMinuteOptions[0];
+
   if (
     dailyCigarettes < 1 ||
     dailyCigarettes > 200 ||
     cigarettePrice <= 0 ||
-    defaultGapTargetMinutes < 30
+    defaultGapTargetMinutes < minGap
   ) {
     return { error: "Invalid data. Please check your inputs." };
   }

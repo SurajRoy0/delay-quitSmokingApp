@@ -30,8 +30,13 @@ export default async function HomePage() {
       {/* Live-Ticking Timer + Challenge Stack + Circular Progress */}
       <LiveTimer
         startedAt={sessionData?.startedAt ?? null}
-        targetMinutes={sessionData?.targetMinutes ?? 240}
+        targetMinutes={sessionData?.targetMinutes ?? stats.defaultGapTargetMinutes}
         totalCigarettesLogged={stats.totalCigarettesLogged}
+        initialElapsedMs={
+          sessionData?.startedAt
+            ? Date.now() - new Date(sessionData.startedAt).getTime()
+            : 0
+        }
       />
 
       {/* Stats Cards */}

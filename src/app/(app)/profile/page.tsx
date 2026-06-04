@@ -2,6 +2,7 @@ import { Flame, ExternalLink, ChevronRight } from "lucide-react";
 import { getUserProfile, getUserStats } from "@/actions/user";
 import { ThemeToggle } from "./theme-toggle-inline";
 import { SignOutButton } from "@/components/sign-out-button";
+import { EditProfileTrigger } from "./edit-profile-trigger";
 
 export default async function ProfilePage() {
   const profile = await getUserProfile();
@@ -54,9 +55,12 @@ export default async function ProfilePage() {
       <div className="flex flex-col gap-8">
         {/* Smoking Profile */}
         <section>
-          <h3 className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 ml-2 font-medium">
-            Smoking Profile
-          </h3>
+          <div className="flex items-center justify-between mb-3 ml-2">
+            <h3 className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+              Smoking Profile
+            </h3>
+            <EditProfileTrigger smokingProfile={profile.smokingProfile} />
+          </div>
           <div className="bg-card/40 border border-border/40 rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-border/40">
               <div className="flex items-center gap-3 text-muted-foreground">

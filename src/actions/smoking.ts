@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUserId } from "@/lib/server-utils";
 import { formatDurationMs } from "@/lib/format";
+import { differenceInMinutes } from "date-fns";
+import { rawMinuteOptions } from "@/components/duration-picker";
 
 
 // ─── Data for the home page live timer ───────────────────────────────
@@ -36,9 +38,7 @@ export async function getSmokeFreeMinutes(): Promise<number> {
 
   if (!activeSession) return 0;
 
-  return Math.floor(
-    (Date.now() - activeSession.startedAt.getTime()) / (1000 * 60)
-  );
+  return differenceInMinutes(new Date(), activeSession.startedAt);
 }
 
 // ─── Data for the "Next Milestone" card on home page ─────────────────
@@ -69,8 +69,7 @@ export async function getNextMilestoneProgress(): Promise<{
     return { label: MILESTONES[0].label, progressPercent: 0 };
   }
 
-  const elapsedMinutes =
-    (Date.now() - activeSession.startedAt.getTime()) / (1000 * 60);
+  const elapsedMinutes = differenceInMinutes(new Date(), activeSession.startedAt);
 
   // Find the next unachieved milestone
   for (const m of MILESTONES) {
@@ -108,9 +107,7 @@ export async function logSmokeEvent(reason?: string) {
   let gapMinutes = 0;
 
   if (activeSession) {
-    gapMinutes = Math.floor(
-      (now.getTime() - activeSession.startedAt.getTime()) / (1000 * 60)
-    );
+    gapMinutes = differenceInMinutes(now, activeSession.startedAt);
   }
 
   const sessionStatus =
@@ -210,4 +207,39 @@ export async function logSmokeEvent(reason?: string) {
         }
       : null,
   };
+}
+
+export async function updateActiveSessionTarget(targetMinutes: number) {
+  const userId = await getAuthenticatedUserId();
+
+  const minGap = rawMinuteOptions[0];
+
+  if (targetMinutes < minGap) {
+    return { error: `Target gap must be at least ${minGap} minutes.` };
+  }
+
+  // 1. Update the user's default preference
+  await prisma.user.update({
+    where: { id: userId },
+    data: { defaultGapTargetMinutes: targetMinutes },
+  });
+
+  // 2. Update active gap session if one exists
+  const activeSession = await prisma.gapSession.findFirst({
+    where: { userId, status: "ACTIVE" },
+    orderBy: { startedAt: "desc" },
+  });
+
+  if (activeSession) {
+    await prisma.gapSession.update({
+      where: { id: activeSession.id },
+      data: { targetMinutes },
+    });
+  }
+
+  revalidatePath("/home");
+  revalidatePath("/health");
+  revalidatePath("/profile");
+
+  return { success: true };
 }

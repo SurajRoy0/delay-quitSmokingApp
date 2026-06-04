@@ -3,18 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConfirmSmokeModal } from "@/components/confirm-smoke-modal";
-import { SessionCompletionModal } from "@/components/session-completion-modal";
 import { logSmokeEvent } from "@/actions/smoking";
 
 import { cn } from "@/lib/utils";
-
-interface SessionSummary {
-  totalSmokeFreeTime: string;
-  gapMinutes: number;
-  targetMinutes: number;
-  status: string;
-  longestGapEver: number;
-}
 
 interface ConfirmSmokeButtonProps {
   isFirst?: boolean;
@@ -22,23 +13,10 @@ interface ConfirmSmokeButtonProps {
 
 export function ConfirmSmokeButton({ isFirst }: ConfirmSmokeButtonProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [completionOpen, setCompletionOpen] = useState(false);
-  const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
   const router = useRouter();
 
   const handleConfirm = async (reason?: string) => {
-    const result = await logSmokeEvent(reason);
-    if (result.sessionSummary) {
-      setSessionSummary(result.sessionSummary);
-      setCompletionOpen(true);
-    } else {
-      router.refresh();
-    }
-  };
-
-  const handleCompletionClose = () => {
-    setCompletionOpen(false);
-    setSessionSummary(null);
+    await logSmokeEvent(reason);
     router.refresh();
   };
 
@@ -77,12 +55,6 @@ export function ConfirmSmokeButton({ isFirst }: ConfirmSmokeButtonProps) {
         onOpenChange={setModalOpen}
         onConfirm={handleConfirm}
         isFirst={isFirst}
-      />
-
-      <SessionCompletionModal
-        open={completionOpen}
-        onClose={handleCompletionClose}
-        summary={sessionSummary}
       />
     </>
   );

@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { CircularProgress } from "@/components/circular-progress";
 import { CheckCircle2 } from "lucide-react";
 import { formatDurationMs } from "@/lib/format";
+import { EditTargetModal } from "@/app/(app)/home/edit-target-modal";
 
 interface LiveTimerProps {
   startedAt: string | null; // ISO string
   targetMinutes: number;
   totalCigarettesLogged?: number;
+  initialElapsedMs: number;
 }
 
 function getElapsed(startedAt: string | null): number {
@@ -16,8 +18,14 @@ function getElapsed(startedAt: string | null): number {
   return Math.max(0, Date.now() - new Date(startedAt).getTime());
 }
 
-export function LiveTimer({ startedAt, targetMinutes, totalCigarettesLogged }: LiveTimerProps) {
-  const [elapsedMs, setElapsedMs] = useState(() => getElapsed(startedAt));
+export function LiveTimer({
+  startedAt,
+  targetMinutes,
+  totalCigarettesLogged,
+  initialElapsedMs,
+}: LiveTimerProps) {
+  const [elapsedMs, setElapsedMs] = useState(initialElapsedMs);
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     if (!startedAt) return;
@@ -162,14 +170,26 @@ export function LiveTimer({ startedAt, targetMinutes, totalCigarettesLogged }: L
       {/* Circular Progress */}
       <section className="flex flex-col items-center mb-10 relative">
         <CircularProgress value={progressValue} max={100} size={220} strokeWidth={8}>
-          <div className="flex flex-col items-center">
-            <span className="text-3xl mb-1">{goalLabel}</span>
-            <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground font-medium">
+          <button
+            onClick={() => setEditOpen(true)}
+            className="flex flex-col items-center group focus:outline-none cursor-pointer"
+          >
+            <span className="text-3xl font-bold tracking-tight mb-0.5 flex items-center gap-1.5 group-hover:text-brand transition-colors pl-3">
+              {goalLabel}
+              <span className="text-xs opacity-60 group-hover:opacity-100 transition-opacity">✏️</span>
+            </span>
+            <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground font-medium group-hover:text-brand-light transition-colors">
               {goalSub}
             </span>
-          </div>
+          </button>
         </CircularProgress>
       </section>
+
+      <EditTargetModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        currentTargetMinutes={targetMinutes}
+      />
     </>
   );
 }
