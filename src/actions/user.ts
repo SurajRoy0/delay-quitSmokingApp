@@ -69,6 +69,7 @@ export async function getUserStats() {
   if (!stats) {
     return {
       longestGap: "0m",
+      longestGapMinutes: 0,
       totalSaved: 0,
       currencySymbol,
       oxygenLevel: 95,
@@ -95,6 +96,7 @@ export async function getUserStats() {
 
   return {
     longestGap: formatDurationMinutes(stats.longestGapMinutes),
+    longestGapMinutes: stats.longestGapMinutes,
     totalSaved: saved,
     currencySymbol,
     oxygenLevel: oxygen,

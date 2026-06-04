@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Flame, Wind, Wallet, Trophy } from "lucide-react";
 import { ConfirmSmokeButton } from "./confirm-button";
 import { getActiveSessionData, getNextMilestoneProgress } from "@/actions/smoking";
@@ -5,12 +6,43 @@ import { getUserStats } from "@/actions/user";
 import { LiveTimer } from "@/components/live-timer";
 import { NextMilestoneCard } from "@/components/next-milestone-card";
 
+import { differenceInMinutes } from "date-fns";
+import { formatDurationMinutes } from "@/lib/format";
+import { getCurrentSurviveMessage } from "@/lib/survive";
+import { SurviveSection } from "@/components/survive-section";
+
 export default async function HomePage() {
   const [sessionData, stats, milestone] = await Promise.all([
     getActiveSessionData(),
     getUserStats(),
     getNextMilestoneProgress(),
   ]);
+
+  // Calculate elapsed time in minutes for the current session
+  const elapsedMinutes = sessionData?.startedAt
+    ? differenceInMinutes(new Date(), new Date(sessionData.startedAt))
+    : 0;
+
+  // Active target minutes (falls back to default target preference)
+  const target = sessionData?.targetMinutes ?? stats.defaultGapTargetMinutes;
+
+  // Compute metrics required by the Survive Message builder
+  const progressPercent = target > 0 ? Math.min(100, Math.floor((elapsedMinutes / target) * 100)) : 0;
+  const remainingMinutes = Math.max(0, target - elapsedMinutes);
+  const extraMinutes = elapsedMinutes - target;
+  const blockMinutes = target * 0.25;
+  const completedBlocks = extraMinutes > 0 && blockMinutes > 0 ? Math.floor(extraMinutes / blockMinutes) : 0;
+  const recordRemaining = Math.max(0, stats.longestGapMinutes - elapsedMinutes);
+
+  // Fetch the contextual dynamic Survive Message for the current hour
+  const surviveEntry = getCurrentSurviveMessage({
+    currentGap: formatDurationMinutes(elapsedMinutes),
+    progressPercent,
+    remainingMinutes,
+    completedBlocks,
+    recordRemaining,
+    suggestedDelay: 15,
+  });
 
   return (
     <div className="flex flex-col min-h-screen px-6 py-6 pb-24 md:max-w-md md:mx-auto">
@@ -61,26 +93,24 @@ export default async function HomePage() {
       </section>
 
       {/* Next Milestone — dynamic */}
+      <div className="flex items-center justify-between mb-3 ml-2">
+        <h3 className="text-[10px] uppercase tracking-widest text-muted-foreground font-medium">
+          Next Milestone
+        </h3>
+        <Link
+          href="/health"
+          className="text-[10px] uppercase tracking-widest text-brand-light font-medium hover:underline flex items-center gap-1"
+        >
+          View All &rarr;
+        </Link>
+      </div>
       <NextMilestoneCard
         label={milestone.label}
         progressPercent={milestone.progressPercent}
       />
 
-      {/* Evening Reflection */}
-      <section className="relative h-40 bg-card rounded-2xl overflow-hidden mb-6 flex flex-col justify-end p-5 border border-border/40">
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/20 z-10" />
-        <div className="absolute inset-0 bg-muted z-0 opacity-50" />
-        <div className="relative z-20">
-          <h3 className="text-lg text-white mb-2">Evening Reflection</h3>
-          <p className="text-[10px] text-white/80 mb-3 max-w-[200px]">
-            Your lung capacity is significantly improving during rest. Breathe
-            deeply tonight.
-          </p>
-          <button className="text-[10px] uppercase tracking-wider text-brand-light font-medium flex items-center gap-1">
-            Read More <span className="text-lg leading-none">&rarr;</span>
-          </button>
-        </div>
-      </section>
+      {/* Survive Section */}
+      <SurviveSection entry={surviveEntry} />
 
       {/* I Smoked Button */}
       <ConfirmSmokeButton isFirst={stats.totalCigarettesLogged === 0} />

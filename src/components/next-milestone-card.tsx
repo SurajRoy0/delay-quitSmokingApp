@@ -15,10 +15,7 @@ export function NextMilestoneCard({ label, progressPercent }: NextMilestoneCardP
       <div className="absolute right-0 bottom-0 opacity-5 scale-150 transform translate-x-4 translate-y-4">
         <Wind className="w-32 h-32" />
       </div>
-      <div className="relative z-10 flex justify-between items-start mb-2">
-        <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
-          Next Milestone
-        </span>
+      <div className="relative z-10 flex justify-end items-start mb-2">
         {isComplete ? (
           <CheckCircle2 className="w-3.5 h-3.5 text-brand" />
         ) : (
