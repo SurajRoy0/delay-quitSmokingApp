@@ -15,6 +15,8 @@ import { getUserProfile, getUserStats } from "@/actions/user";
 import { ThemeToggle } from "./theme-toggle-inline";
 import { SignOutButton } from "@/components/sign-out-button";
 import { EditProfileTrigger } from "./edit-profile-trigger";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
+
 
 export default async function ProfilePage() {
   const profile = await getUserProfile();
@@ -118,6 +120,9 @@ export default async function ProfilePage() {
             </div>
           </div>
         </section>
+
+        {/* PWA Install Card */}
+        <InstallPrompt />
 
         {/* Appearance */}
         <section>

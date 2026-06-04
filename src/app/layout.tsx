@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Poppins } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { PWAProvider } from "@/components/pwa/pwa-provider";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -15,6 +16,11 @@ export const metadata: Metadata = {
   description:
     "Every minute you wait is a victory. Start small. Build streaks. Quit eventually.",
   applicationName: "Delay",
+  appleWebApp: {
+    capable: true,
+    title: "Delay",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
@@ -37,7 +43,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <PWAProvider>
+            {children}
+          </PWAProvider>
           <Toaster />
         </ThemeProvider>
       </body>

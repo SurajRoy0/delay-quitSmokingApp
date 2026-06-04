@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ["/", "/login"];
+const PUBLIC_ROUTES = ["/", "/login", "/offline"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -20,11 +20,14 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/home", request.url));
   }
 
-  // Protect all app routes (anything not in PUBLIC_ROUTES)
+  // Protect all app routes (anything not in PUBLIC_ROUTES, and not PWA assets)
   const isPublic =
     PUBLIC_ROUTES.some((route) => pathname === route) ||
     pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/dev/");
+    pathname.startsWith("/api/dev/") ||
+    pathname === "/sw.js" ||
+    pathname === "/manifest.webmanifest" ||
+    pathname.startsWith("/icons/");
 
   if (!sessionCookie && !isPublic) {
     return NextResponse.redirect(new URL("/login", request.url));
@@ -35,7 +38,7 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all routes except Next.js internals and static files
-    "/((?!_next/static|_next/image|favicon.ico|api/auth).*)",
+    // Match all routes except Next.js internals, static files, and PWA assets
+    "/((?!_next/static|_next/image|favicon.ico|api/auth|sw\\.js|manifest\\.webmanifest|icons/).*)",
   ],
 };
