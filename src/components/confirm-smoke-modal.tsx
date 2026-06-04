@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Cigarette } from "lucide-react";
 
 interface ConfirmSmokeModalProps {
   open: boolean;
@@ -53,7 +54,7 @@ export function ConfirmSmokeModal({
       <DialogContent className="sm:max-w-md bg-card border-border/50 text-center flex flex-col items-center">
         <DialogHeader className="flex flex-col items-center space-y-3">
           <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-2">
-            <span className="text-xl">🚬</span>
+            <Cigarette className="w-6 h-6 text-muted-foreground" />
           </div>
           <DialogTitle className="text-xl font-medium tracking-tight font-sans">
             {isFirst ? "Ready to start your journey?" : "Did you smoke a cigarette?"}

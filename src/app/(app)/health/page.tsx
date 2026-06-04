@@ -1,4 +1,4 @@
-import { Flame, CheckCircle2 } from "lucide-react";
+import { Flame, CheckCircle2, Trophy } from "lucide-react";
 import milestones from "@/lib/health-milestones.json";
 import { getUserStats } from "@/actions/user";
 import { getSmokeFreeMinutes } from "@/actions/smoking";
@@ -16,7 +16,8 @@ export default async function HealthPage() {
           <span className="text-xl">Delay</span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1 bg-brand-light/10 rounded-full border border-brand-light/20">
-          <span className="text-brand-light text-xs font-medium tracking-wider">🏆 {stats.longestGap}</span>
+          <Trophy className="w-3.5 h-3.5 text-brand-light" />
+          <span className="text-brand-light text-xs font-medium tracking-wider">{stats.longestGap}</span>
         </div>
       </header>
 

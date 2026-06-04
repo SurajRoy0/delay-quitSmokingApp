@@ -1,4 +1,4 @@
-import { Flame, Wind, Wallet } from "lucide-react";
+import { Flame, Wind, Wallet, Trophy } from "lucide-react";
 import { ConfirmSmokeButton } from "./confirm-button";
 import { getActiveSessionData, getNextMilestoneProgress } from "@/actions/smoking";
 import { getUserStats } from "@/actions/user";
@@ -21,8 +21,9 @@ export default async function HomePage() {
           <span className="text-xl">Delay</span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1 bg-brand-light/10 rounded-full border border-brand-light/20">
+          <Trophy className="w-3.5 h-3.5 text-brand-light" />
           <span className="text-brand-light text-xs font-medium tracking-wider">
-            🏆 {stats.longestGap}
+            {stats.longestGap}
           </span>
         </div>
       </header>

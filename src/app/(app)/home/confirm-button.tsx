@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ConfirmSmokeModal } from "@/components/confirm-smoke-modal";
 import { logSmokeEvent } from "@/actions/smoking";
+import { Cigarette } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -35,7 +36,7 @@ export function ConfirmSmokeButton({ isFirst }: ConfirmSmokeButtonProps) {
           "w-10 h-10 rounded-full flex items-center justify-center",
           isFirst ? "bg-brand/20" : "bg-brand-dark/20"
         )}>
-          <span className="text-lg opacity-80">🚬</span>
+          <Cigarette className="w-5 h-5 text-brand" />
         </div>
         <div className="flex flex-col items-center">
           <span className={cn(

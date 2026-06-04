@@ -1,4 +1,16 @@
-import { Flame, ExternalLink, ChevronRight } from "lucide-react";
+import {
+  Flame,
+  ExternalLink,
+  ChevronRight,
+  Trophy,
+  Cigarette,
+  Banknote,
+  Timer,
+  Palette,
+  Tag,
+  HelpCircle,
+  Mail,
+} from "lucide-react";
 import { getUserProfile, getUserStats } from "@/actions/user";
 import { ThemeToggle } from "./theme-toggle-inline";
 import { SignOutButton } from "@/components/sign-out-button";
@@ -17,8 +29,9 @@ export default async function ProfilePage() {
           <span className="text-xl">Delay</span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1 bg-brand-light/10 rounded-full border border-brand-light/20">
+          <Trophy className="w-3.5 h-3.5 text-brand-light" />
           <span className="text-brand-light text-xs font-medium tracking-wider">
-            🏆 {stats.longestGap}
+            {stats.longestGap}
           </span>
         </div>
       </header>
@@ -64,7 +77,7 @@ export default async function ProfilePage() {
           <div className="bg-card/40 border border-border/40 rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-border/40">
               <div className="flex items-center gap-3 text-muted-foreground">
-                <span className="text-lg">🚬</span>
+                <Cigarette className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-foreground">
                   Daily cigarettes
                 </span>
@@ -78,7 +91,7 @@ export default async function ProfilePage() {
             </div>
             <div className="flex items-center justify-between p-4 border-b border-border/40">
               <div className="flex items-center gap-3 text-muted-foreground">
-                <span className="text-lg">💵</span>
+                <Banknote className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-foreground">
                   Price per cigarette
                 </span>
@@ -93,7 +106,7 @@ export default async function ProfilePage() {
             </div>
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3 text-muted-foreground">
-                <span className="text-lg">⏱️</span>
+                <Timer className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm text-foreground">Gap target</span>
               </div>
               <div className="flex items-center gap-2">
@@ -113,7 +126,7 @@ export default async function ProfilePage() {
           </h3>
           <div className="bg-card/40 border border-border/40 rounded-2xl overflow-hidden p-4 flex items-center justify-between">
             <div className="flex items-center gap-3 text-muted-foreground">
-              <span className="text-lg">🎨</span>
+              <Palette className="w-4 h-4 text-muted-foreground" />
               <span className="text-sm text-foreground">Theme</span>
             </div>
             <ThemeToggle />
@@ -129,7 +142,7 @@ export default async function ProfilePage() {
             <div className="bg-card/40 border border-border/40 rounded-2xl overflow-hidden p-4 flex items-center justify-between cursor-pointer hover:bg-card/60 transition-colors">
               <div className="flex items-center gap-3">
                 <div className="bg-brand-light/20 p-2 rounded-xl">
-                  <span className="text-lg">🏷️</span>
+                  <Tag className="w-4 h-4 text-brand-light" />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">Premium Plan</span>
@@ -151,14 +164,14 @@ export default async function ProfilePage() {
           <div className="bg-card/40 border border-border/40 rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b border-border/40 cursor-pointer hover:bg-card/60 transition-colors">
               <div className="flex items-center gap-3">
-                <span className="text-lg">❓</span>
+                <HelpCircle className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm">FAQ</span>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground/50" />
             </div>
             <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-card/60 transition-colors">
               <div className="flex items-center gap-3">
-                <span className="text-lg">✉️</span>
+                <Mail className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm">Contact Support</span>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground/50" />

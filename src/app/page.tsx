@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { Flame } from "lucide-react";
 
 export default async function LandingPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -16,14 +17,7 @@ export default async function LandingPage() {
         <div className="max-w-5xl mx-auto h-full px-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-ember-1 to-ember-2 flex items-center justify-center shadow-sm">
-              <svg
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-4 h-4 text-white"
-                aria-hidden="true"
-              >
-                <path d="M12 2C12 2 7 7.5 7 12.5C7 15.538 9.239 18 12 18C14.761 18 17 15.538 17 12.5C17 11 16.5 9.5 15.5 8.5C15.5 8.5 15 10.5 13.5 11C13.5 11 14 8 12 2Z" />
-              </svg>
+              <Flame className="w-4 h-4 text-white" />
             </div>
             <span className="font-semibold text-lg tracking-tight">Delay</span>
           </div>
