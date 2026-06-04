@@ -14,7 +14,7 @@ export function AppShell({ children, needsOnboarding }: AppShellProps) {
 
   return (
     <div className="flex flex-col min-h-dvh bg-background">
-      <main className="flex-1 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0 md:pt-14">
+      <main className="flex-1 pb-28">
         {children}
       </main>
 
