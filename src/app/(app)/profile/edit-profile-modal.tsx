@@ -6,7 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Pencil, Check } from "lucide-react";
+import { ButtonLoader } from "@/components/button-loader";
 
 import {
   Dialog,
@@ -32,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { updateUserProfile } from "@/actions/user";
+import { useUpdateUserProfile } from "@/hooks/use-smoking";
 import { DurationPicker, rawMinuteOptions } from "@/components/duration-picker";
 
 const minGap = rawMinuteOptions[0];
@@ -83,6 +84,7 @@ export function EditProfileModal({
   initialValues,
 }: EditProfileModalProps) {
   const router = useRouter();
+  const { mutateAsync: updateProfile, isPending } = useUpdateUserProfile();
   
   // Detect if initial value is custom or preset
   const isPresetInitial = [60, 120, 240, 360, 480].includes(
@@ -100,19 +102,14 @@ export function EditProfileModal({
     },
   });
 
-  const { isSubmitting } = form.formState;
-
   async function onSubmit(values: FormValues) {
-    const result = await updateUserProfile(values);
-
-    if (result && "error" in result) {
-      toast.error(result.error);
-      return;
+    try {
+      await updateProfile(values);
+      toast.success("Profile settings updated successfully!");
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update profile.");
     }
-
-    toast.success("Profile settings updated successfully!");
-    onOpenChange(false);
-    router.refresh();
   }
 
   return (
@@ -269,14 +266,11 @@ export function EditProfileModal({
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isPending}
                 className="flex-1 rounded-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md transition-all active:scale-95"
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving…
-                  </>
+                {isPending ? (
+                  <ButtonLoader className="mr-2" />
                 ) : (
                   "Save Changes"
                 )}

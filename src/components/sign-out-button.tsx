@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
-import { LogOut, Loader2 } from "lucide-react";
+import { LogOut } from "lucide-react";
+import { ButtonLoader } from "@/components/button-loader";
 
 export function SignOutButton() {
   const [loading, setLoading] = useState(false);
@@ -28,7 +29,7 @@ export function SignOutButton() {
       className="w-full h-12 rounded-full border-destructive/30 text-destructive hover:bg-destructive/10 active:scale-95 transition-all font-semibold shadow-sm"
     >
       {loading ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <ButtonLoader className="mr-2" />
       ) : (
         <LogOut className="mr-2 h-4 w-4" />
       )}

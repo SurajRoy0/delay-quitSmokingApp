@@ -1,10 +1,22 @@
+"use client";
+
 import Link from "next/link";
 import { Flame, Trophy, ChevronRight, BookOpen, Clock } from "lucide-react";
-import { getUserStats } from "@/actions/user";
+import { useUserStats } from "@/hooks/use-smoking";
 import { TIPS } from "@/lib/tips";
 
-export default async function TipsPage() {
-  const stats = await getUserStats();
+export default function TipsPage() {
+  const { data: stats } = useUserStats();
+
+  if (!stats) {
+    return (
+      <div className="flex flex-col min-h-screen px-6 py-6 pb-24 md:max-w-md md:mx-auto animate-pulse">
+        <div className="h-10 bg-card rounded mb-8 w-full" />
+        <div className="h-20 bg-card rounded-2xl mb-10 w-full" />
+        <div className="h-40 bg-card rounded-2xl w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen px-6 py-6 pb-24 md:max-w-md md:mx-auto">

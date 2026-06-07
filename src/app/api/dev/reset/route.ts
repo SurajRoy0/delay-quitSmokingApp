@@ -49,7 +49,6 @@ async function handleReset(request: Request) {
       // Complete wipe of all tables
       await prisma.$transaction([
         prisma.subscription.deleteMany(),
-        prisma.cravingEvent.deleteMany(),
         // Due to foreign keys and self-referential relations, we delete gap sessions first,
         // then clear previousLogId chains on SmokeLog, delete smoke logs, then delete accounts/sessions/users
         prisma.gapSession.deleteMany(),
@@ -72,7 +71,6 @@ async function handleReset(request: Request) {
     } else {
       // clean: resets all logs, stats, and onboarding status, but preserves users/accounts
       await prisma.$transaction([
-        prisma.cravingEvent.deleteMany(),
         prisma.gapSession.deleteMany(),
         prisma.smokeLog.updateMany({
           data: { previousLogId: null }

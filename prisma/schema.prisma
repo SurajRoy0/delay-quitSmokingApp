@@ -132,7 +132,6 @@ model User {
   sessions      Session[]
   smokeLogs     SmokeLog[]
   gapSessions   GapSession[]
-  cravingEvents CravingEvent[]
   subscription  Subscription?
   userStats     UserStats?
 }
@@ -179,7 +178,10 @@ model SmokeLog {
   smokedAt DateTime @default(now())
 
   // Why the user smoked — captured at log time
-  reason SmokingReason?
+  reasons SmokingReason[]
+
+  // Price of this specific cigarette
+  price Float?
 
   // Free text note (optional)
   notes String?
@@ -204,9 +206,6 @@ model SmokeLog {
   // The gap session that was STARTED by this smoke log
   // (each smoke starts a new gap session)
   startedGapSession GapSession? @relation("SessionStartedBy")
-
-  // The craving event linked to this smoke (if user logged craving before smoking)
-  cravingEvent CravingEvent?
 
   createdAt DateTime @default(now())
 
@@ -258,40 +257,6 @@ model GapSession {
   @@index([userId, status])
 }
 
-// ============================================================
-// CRAVING EVENT
-// Tracks both resisted cravings AND smoked cravings.
-// Replaces the old CravingLog model.
-//
-// resisted = true  → user felt a craving but did NOT smoke
-// resisted = false → user felt a craving and DID smoke
-//                    (linked to the resulting SmokeLog)
-// ============================================================
-
-model CravingEvent {
-  id     String @id @default(cuid())
-  userId String
-
-  reason SmokingReason?
-
-  // Core distinction: did the user resist or give in?
-  resisted Boolean @default(false)
-
-  // If resisted = false, this links to the SmokeLog created when they smoked.
-  // If resisted = true, this is null.
-  smokeLogId String?   @unique
-  smokeLog   SmokeLog? @relation(fields: [smokeLogId], references: [id])
-
-  // Optional note
-  notes String?
-
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([userId, resisted])
-}
 
 // ============================================================
 // SUBSCRIPTION

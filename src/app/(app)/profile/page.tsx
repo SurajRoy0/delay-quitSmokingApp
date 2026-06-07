@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Flame,
   ExternalLink,
@@ -11,16 +13,20 @@ import {
   HelpCircle,
   Mail,
 } from "lucide-react";
-import { getUserProfile, getUserStats } from "@/actions/user";
+import { PageLoader } from "@/components/page-loader";
+import { useUserProfile, useUserStats } from "@/hooks/use-smoking";
 import { ThemeToggle } from "./theme-toggle-inline";
 import { SignOutButton } from "@/components/sign-out-button";
 import { EditProfileTrigger } from "./edit-profile-trigger";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
 
+export default function ProfilePage() {
+  const { data: profile, isLoading: profileLoading } = useUserProfile();
+  const { data: stats, isLoading: statsLoading } = useUserStats();
 
-export default async function ProfilePage() {
-  const profile = await getUserProfile();
-  const stats = await getUserStats();
+  if (profileLoading || statsLoading || !profile || !stats) {
+    return <PageLoader />;
+  }
 
   return (
     <div className="flex flex-col min-h-screen px-6 py-6 pb-24 md:max-w-md md:mx-auto">
@@ -50,7 +56,7 @@ export default async function ProfilePage() {
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-3xl font-medium bg-gradient-to-br from-brand-dark to-brand text-white">
-                {profile.name[0]}
+                {profile.name?.[0] || "U"}
               </div>
             )}
           </div>

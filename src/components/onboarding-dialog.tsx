@@ -6,7 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Cigarette } from "lucide-react";
+import { Cigarette } from "lucide-react";
+import { ButtonLoader } from "@/components/button-loader";
 
 import {
   Dialog,
@@ -32,7 +33,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { completeOnboarding } from "@/actions/onboarding";
 import { DurationPicker, rawMinuteOptions } from "@/components/duration-picker";
 
 const minGap = rawMinuteOptions[0];
@@ -78,8 +78,8 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema) as Resolver<FormValues>,
     defaultValues: {
-      dailyCigarettes: 10,
-      cigarettePrice: 20,
+      dailyCigarettes: "" as any,
+      cigarettePrice: "" as any,
       currency: "INR",
       defaultGapTargetMinutes: 240,
     },
@@ -88,16 +88,25 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
   const { isSubmitting } = form.formState;
 
   async function onSubmit(values: FormValues) {
-    const result = await completeOnboarding(values);
+    try {
+      const res = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      const result = await res.json();
 
-    if ("error" in result) {
-      toast.error(result.error);
-      return;
+      if (!res.ok || result.error) {
+        toast.error(result.error || "Failed to save onboarding data.");
+        return;
+      }
+
+      toast.success("All set! Let's begin your journey.");
+      onComplete();
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong.");
     }
-
-    toast.success("All set! Let's begin your journey.");
-    onComplete();
-    router.refresh();
   }
 
   return (
@@ -267,10 +276,7 @@ export function OnboardingDialog({ open, onComplete }: OnboardingDialogProps) {
               className="w-full mt-4 h-12 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-md transition-all active:scale-95"
             >
               {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Saving…
-                </>
+                <ButtonLoader className="mr-2" />
               ) : (
                 "Start my journey"
               )}

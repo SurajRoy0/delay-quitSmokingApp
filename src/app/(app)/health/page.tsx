@@ -1,11 +1,19 @@
-import { Flame, CheckCircle2, Trophy } from "lucide-react";
-import milestones from "@/lib/health-milestones.json";
-import { getUserStats } from "@/actions/user";
-import { getSmokeFreeMinutes } from "@/actions/smoking";
+"use client";
 
-export default async function HealthPage() {
-  const stats = await getUserStats();
-  const currentMinutes = await getSmokeFreeMinutes();
+import { Flame, CheckCircle2, Trophy } from "lucide-react";
+import { PageLoader } from "@/components/page-loader";
+import milestones from "@/lib/health-milestones.json";
+import { useUserStats, useActiveSession } from "@/hooks/use-smoking";
+
+export default function HealthPage() {
+  const { data: stats } = useUserStats();
+  const { data: activeSessionData } = useActiveSession();
+
+  if (!stats || !activeSessionData) {
+    return <PageLoader />;
+  }
+
+  const currentMinutes = activeSessionData.session?.elapsedMinutes || 0;
 
   return (
     <div className="flex flex-col min-h-screen px-6 py-6 pb-24 md:max-w-md md:mx-auto">

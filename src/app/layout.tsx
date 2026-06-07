@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PWAProvider } from "@/components/pwa/pwa-provider";
+import { QueryProvider } from "@/components/query-provider";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -43,9 +44,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <PWAProvider>
-            {children}
-          </PWAProvider>
+          <QueryProvider>
+            <PWAProvider>
+              {children}
+            </PWAProvider>
+          </QueryProvider>
           <Toaster />
         </ThemeProvider>
       </body>

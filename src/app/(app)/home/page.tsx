@@ -1,8 +1,10 @@
+"use client";
+
 import Link from "next/link";
-import { Flame, Wind, Wallet, Trophy } from "lucide-react";
+import { Flame, Activity, Wallet, Trophy } from "lucide-react";
 import { ConfirmSmokeButton } from "./confirm-button";
-import { getActiveSessionData, getNextMilestoneProgress } from "@/actions/smoking";
-import { getUserStats } from "@/actions/user";
+import { useUserStats, useActiveSession, useAnalytics } from "@/hooks/use-smoking";
+import { PageLoader } from "@/components/page-loader";
 import { LiveTimer } from "@/components/live-timer";
 import { NextMilestoneCard } from "@/components/next-milestone-card";
 
@@ -11,12 +13,17 @@ import { formatDurationMinutes } from "@/lib/format";
 import { getCurrentSurviveMessage } from "@/lib/survive";
 import { SurviveSection } from "@/components/survive-section";
 
-export default async function HomePage() {
-  const [sessionData, stats, milestone] = await Promise.all([
-    getActiveSessionData(),
-    getUserStats(),
-    getNextMilestoneProgress(),
-  ]);
+export default function HomePage() {
+  const { data: stats } = useUserStats();
+  const { data: activeSessionData } = useActiveSession();
+  const { data: analytics } = useAnalytics();
+
+  if (!stats || !activeSessionData || !analytics) {
+    return <PageLoader />;
+  }
+
+  const sessionData = activeSessionData.session;
+  const milestone = activeSessionData.milestone;
 
   // Calculate elapsed time in minutes for the current session
   const elapsedMinutes = sessionData?.startedAt
@@ -50,7 +57,7 @@ export default async function HomePage() {
       <header className="flex items-center justify-between mb-10">
         <div className="flex items-center gap-2">
           <Flame className="w-5 h-5 text-brand" />
-          <span className="text-xl">Delay</span>
+          <span className="text-xl font-semibold">Delay</span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1 bg-brand-light/10 rounded-full border border-brand-light/20">
           <Trophy className="w-3.5 h-3.5 text-brand-light" />
@@ -74,21 +81,25 @@ export default async function HomePage() {
 
       {/* Stats Cards */}
       <section className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-card/40 border border-border/40 rounded-2xl p-5 flex flex-col">
-          <Wind className="w-5 h-5 text-brand mb-4" />
-          <span className="text-2xl mb-1">{stats.oxygenLevel}%</span>
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
-            Oxygen Level
-          </span>
+        <div className="bg-card/40 border border-border/40 rounded-2xl p-5 flex items-center gap-4">
+          <Activity className="w-8 h-8 text-brand" />
+          <div className="flex flex-col">
+            <span className="text-xl mb-1">{analytics.last24h.count} / {stats.currencySymbol}{analytics.last24h.spent}</span>
+            <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
+              Last 24h Summary
+            </span>
+          </div>
         </div>
-        <div className="bg-card/40 border border-border/40 rounded-2xl p-5 flex flex-col">
-          <Wallet className="w-5 h-5 text-brand mb-4" />
-          <span className="text-2xl mb-1">
-            {stats.currencySymbol}{stats.totalSaved}
-          </span>
-          <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
-            Total Saved
-          </span>
+        <div className="bg-card/40 border border-border/40 rounded-2xl p-5 flex items-center gap-4">
+          <Wallet className="w-8 h-8 text-brand" />
+          <div className="flex flex-col">
+            <span className="text-xl mb-1">
+              {stats.currencySymbol}{stats.totalSaved}
+            </span>
+            <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
+              Total Saved
+            </span>
+          </div>
         </div>
       </section>
 

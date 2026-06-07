@@ -4,7 +4,8 @@ import { signIn } from "@/lib/auth-client";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { ButtonLoader } from "@/components/button-loader";
+import { Flame } from "lucide-react";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -70,7 +71,7 @@ export default function LoginPage() {
               aria-label="Sign in with Google"
             >
               {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin text-ember-1" />
+                <ButtonLoader />
               ) : (
                 <svg
                   width="20"

@@ -10,14 +10,20 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Cigarette } from "lucide-react";
+import { toast } from "sonner";
+import { ButtonLoader } from "@/components/button-loader";
 
 interface ConfirmSmokeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (reason?: string) => void;
+  onConfirm: (reasons: string[], price?: number) => Promise<void>;
   isFirst?: boolean;
+  defaultPrice?: number;
+  currencySymbol?: string;
 }
 
 const REASONS = [
@@ -35,18 +41,36 @@ export function ConfirmSmokeModal({
   onOpenChange,
   onConfirm,
   isFirst,
+  defaultPrice,
+  currencySymbol = "₹",
 }: ConfirmSmokeModalProps) {
-  const [selectedReason, setSelectedReason] = useState<string | undefined>();
+  const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
+  const [priceStr, setPriceStr] = useState<string>("");
 
-  const handleConfirm = () => {
-    onConfirm(selectedReason);
-    onOpenChange(false);
-    setSelectedReason(undefined);
+  const [isPending, setIsPending] = useState(false);
+
+  const handleConfirm = async () => {
+    if (selectedReasons.length === 0) {
+      toast.error("Please tell us what triggered it. Select at least one reason.");
+      return;
+    }
+    const parsedPrice = priceStr ? parseFloat(priceStr) : defaultPrice;
+
+    setIsPending(true);
+    try {
+      await onConfirm(selectedReasons, parsedPrice);
+      onOpenChange(false);
+      setSelectedReasons([]);
+      setPriceStr("");
+    } finally {
+      setIsPending(false);
+    }
   };
 
   const handleKeepGoing = () => {
     onOpenChange(false);
-    setSelectedReason(undefined);
+    setSelectedReasons([]);
+    setPriceStr("");
   };
 
   return (
@@ -81,31 +105,51 @@ export function ConfirmSmokeModal({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Reason Picker */}
         <div className="w-full mt-4">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 font-medium">
-            {isFirst ? "Any specific mood right now? (Optional)" : "What triggered it?"}
+            {isFirst ? "Any specific mood right now? (Optional)" : "What triggered it? (Select all that apply)"}
           </p>
           <div className="flex flex-wrap justify-center gap-2">
-            {REASONS.map((r) => (
-              <button
-                key={r.value}
-                onClick={() =>
-                  setSelectedReason(
-                    selectedReason === r.value ? undefined : r.value
-                  )
-                }
-                className={cn(
-                  "flex items-center gap-1.5 px-3 py-2 rounded-full border text-xs font-medium transition-all",
-                  selectedReason === r.value
-                    ? "bg-brand/10 border-brand/30 text-brand"
-                    : "bg-muted/30 border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
-                )}
-              >
-                <span>{r.emoji}</span>
-                <span>{r.label}</span>
-              </button>
-            ))}
+            {REASONS.map((r) => {
+              const isSelected = selectedReasons.includes(r.value);
+              return (
+                <button
+                  key={r.value}
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedReasons(selectedReasons.filter(v => v !== r.value));
+                    } else {
+                      setSelectedReasons([...selectedReasons, r.value]);
+                    }
+                  }}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2 rounded-full border text-xs font-medium transition-all",
+                    isSelected
+                      ? "bg-brand/10 border-brand/30 text-brand"
+                      : "bg-muted/30 border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
+                  )}
+                >
+                  <span>{r.emoji}</span>
+                  <span>{r.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="w-full mt-4">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-3 font-medium">
+            Price for this cigarette (Optional)
+          </p>
+          <div className="relative flex items-center justify-center max-w-xs mx-auto">
+            <span className="absolute left-3 text-muted-foreground">{currencySymbol}</span>
+            <Input
+              type="number"
+              placeholder={`Default: ${defaultPrice || 20}`}
+              value={priceStr}
+              onChange={(e) => setPriceStr(e.target.value)}
+              className="pl-8 text-center"
+            />
           </div>
         </div>
 
@@ -120,8 +164,9 @@ export function ConfirmSmokeModal({
             variant="ghost"
             className="w-full text-muted-foreground hover:text-foreground font-medium rounded-full py-6 transition-colors"
             onClick={handleConfirm}
+            disabled={isPending}
           >
-            {isFirst ? "LOG CIGARETTE & START" : "I SMOKED"}
+            {isPending ? <div className="flex items-center justify-center gap-2"><ButtonLoader /> Logging...</div> : (isFirst ? "LOG CIGARETTE & START" : "I SMOKED")}
           </Button>
         </DialogFooter>
       </DialogContent>
